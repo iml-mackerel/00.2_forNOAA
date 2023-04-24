@@ -95,7 +95,7 @@ w <- ddply(bio.index,c('year'),summarise,w=mean(weight)) # gr
 d <- bio.index[bio.index$matur==5 &!is.na(bio.index$matur) & bio.index$sex=='F',]
 d$fec <- 10^(4.32+0.75*log10(d$wgonad*1000))  # gonad weight in gr
 fec <- ddply(d,c('year'),summarise,fec=mean(fec,na.rm=TRUE))
-fec <- rbind(fec,data.frame(year=2022,fec=tail(fec$fec,1)))  # no gonad mass data in 2022 because of lack of early samples!
+fec <- rbind(fec,data.frame(year=2022,fec=mean(tail(fec$fec,5))))  # no gonad mass data in 2022 because of lack of early samples!
 
 # sex ratio
 sexr <- 0.5
@@ -103,7 +103,6 @@ sexr <- 0.5
 # get SSB
 ssbnew <- merge(merge(tep,w),fec)
 ssbnew$ssb <- round(with(ssbnew,tep*10^12*w/(fec*10^3*sexr)),0)
-
 ```
 
 
@@ -125,10 +124,21 @@ ssbs <- rbind(ssb,ssbnew[,names(ssb)])
 ggplot(ssbs,aes(x=year,y=ssb,col=as.factor(assess)))+geom_point()+geom_line()+labs(col='Assessment',x='Year',y='SSB')
 ```
 
+## fec + weight
+weight decrease because younger fish.
+```{r par}
+grid.arrange(
+   ggplot(ssbnew,aes(x=year,y=w))+geom_point()+geom_line(),
+   ggplot(ssbnew,aes(x=year,y=fec))+geom_point()+geom_line()    
+)
+
+```
+
 # Output
 ```{r csv, message = F}
 ssbc <- dcast(ssbs,year~assess,value.var='ssb')
 write.csv(ssbc,'csv/ssb.csv',row.names = FALSE)
+write.csv(ssbnew,'csv/ssbpara.csv',row.names = FALSE)
 
 kable(ssbc)
 ```
